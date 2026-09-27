@@ -25,3 +25,10 @@ py -3.14 -m venv .venv
 ```
 
 `requirements.txt` では,Python 3.14で使える `pygame-ce==2.5.8` を指定しています。ゲーム内での読み込み名は `pygame` です
+
+## 起動
+
+以下でゲームを起動します
+```
+python3 src/main.py
+```
