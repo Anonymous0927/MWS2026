@@ -1,0 +1,136 @@
+{
+  "_comment": "第 1 部 学校編（付録 F）。3 ターン固定で、事件は抽選せず turn の順に起きる。金額は円のまま扱い、万円に丸めない。id はすべて sc_ で始める（会社編との衝突を避けるため）。会社編と同じルール層（resolver）を、このデータで動かす。",
+
+  "budget_per_turn": 12000,
+  "turns": 3,
+  "unit": "yen",
+
+  "_comment_rules": "信用度の式は会社編と同じ「被害額 ÷ 定数（切り上げ）」だが、割る数だけはこのファイルの単位（円）に合わせる。会社編の 10（万円あたり）をそのまま円に当てると、被害 20,000 円で信用度が 2000 も下がり、1 学期でみんなの信頼が 0 になってしまうためである。6,000 円ごとに 1 下がる設定にすると、3 学期を通して 100 → 90 前後で推移し、付録 F.4 の想定に近くなる。",
+  "rules": { "trust_penalty_divisor": 6000 },
+
+  "_comment_targets": "守る対象 3 件（付録 F.1）。学校編メイン画面の中央に縦に並べる。measures はその対象を守る対策 id。",
+  "targets": [
+    { "id": "sc_pc",   "name": "生徒会のパソコン",      "note": "みんなの名簿が入っている",
+      "measures": ["sc_antivirus", "sc_password"] },
+    { "id": "sc_sns",  "name": "部活の SNS アカウント", "note": "部員 40 人が見ている",
+      "measures": ["sc_mfa", "sc_password"] },
+    { "id": "sc_data", "name": "文化祭のデータ",        "note": "USB で家に持ち帰っている",
+      "measures": ["sc_backup", "sc_study"] }
+  ],
+
+  "_comment_measures": "買えるもの 5 種（付録 F.2）。sc_password と sc_mfa が 0 円であることが学校編の最大のねらいで、お金がなくてもできる対策があることを最初のターンで体験させる。",
+  "measures": [
+    { "id": "sc_password", "name": "パスワードを変える", "formal_name": "パスワードの見直し",
+      "cost": 0, "recurring": false,
+      "summary": "使い回しをやめ、長いパスワードにする",
+      "weakness": "パスワードそのものを見られてしまったら防げない",
+      "belongs_to": ["sc_pc", "sc_sns"], "glossary": ["password"] },
+    { "id": "sc_mfa", "name": "二段階認証を ON にする", "formal_name": "多要素認証 / MFA",
+      "cost": 0, "recurring": false,
+      "summary": "設定を変えるだけでできる",
+      "weakness": "スマホを無くしたときの備えは別に要る",
+      "belongs_to": ["sc_sns"], "glossary": ["mfa"] },
+    { "id": "sc_antivirus", "name": "ウイルス対策ソフト", "formal_name": "アンチウイルス",
+      "cost": 4000, "recurring": false,
+      "summary": "パソコンの中で悪いソフトを止める",
+      "weakness": "人がだまされること自体は防げない",
+      "belongs_to": ["sc_pc"], "glossary": ["antivirus", "malware"] },
+    { "id": "sc_backup", "name": "クラウドにバックアップ", "formal_name": "バックアップ",
+      "cost": 3000, "recurring": false,
+      "summary": "データの控えを別の場所に置く",
+      "weakness": "情報が外に漏れることは防げない",
+      "belongs_to": ["sc_data"], "glossary": ["backup"] },
+    { "id": "sc_study", "name": "部員向けの勉強会", "formal_name": "セキュリティ教育",
+      "cost": 2000, "recurring": false,
+      "summary": "あやしいメールの見分け方を教え合う",
+      "weakness": "機械の設定ミスや、攻撃そのものは止められない",
+      "belongs_to": ["sc_data"], "glossary": ["phishing"] }
+  ],
+
+  "_comment_events": "3 ターンの流れ（付録 F.3）。②（何もしない／言われたとおりにする）は damage_scale 1.5、trust_delta −8 に統一する。risky が true の選択肢は、対策のおかげで被害が小さく済んだ場合に「運に頼った判断だった」と結果画面で必ず指摘する。",
+  "events": [
+    {
+      "turn": 1,
+      "id": "sc_login",
+      "name": "部活の SNS に、知らない場所からログインがあった",
+      "base_damage": 20000,
+      "public": false,
+      "situation": [
+        "部活の SNS に、誰も知らない場所からログインした記録が残っていました。",
+        "パスワードは、部員のあいだで使い回しているものでした。"
+      ],
+      "mitigations": { "sc_password": 40, "sc_mfa": 50 },
+      "learning": "同じパスワードを使い回すと、1 か所破られるだけで全部が危なくなります。",
+      "no_effect": [
+        { "measure": "sc_antivirus", "reason": "ウイルス対策ソフトは、正しいパスワードで入ってきた相手を見分けられません。" }
+      ],
+      "glossary": ["password", "mfa"],
+      "choices": [
+        { "id": "sc_fix", "label": "すぐパスワードを変えて、二段階認証を ON にする", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 1, "trust_delta": 0,
+          "result_text": "すぐ手を打ったので、それ以上は使われずに済みました。" },
+        { "id": "sc_wait", "label": "様子を見る", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.5, "downtime_days": 3, "trust_delta": -8, "risky": true,
+          "result_text": "様子を見ているあいだに、部のアカウントで勝手に投稿されてしまいました。" }
+      ]
+    },
+    {
+      "turn": 2,
+      "id": "sc_usb",
+      "name": "文化祭のデータが入った USB を電車で落とした",
+      "base_damage": 30000,
+      "public": false,
+      "situation": [
+        "文化祭のデータが入った USB メモリを、電車の中で落としてしまいました。",
+        "作りかけの資料と、参加者の名前が入っています。"
+      ],
+      "mitigations": { "sc_antivirus": 50, "sc_backup": 40 },
+      "learning": "控えを取っておけば作り直せます。そして事故は、隠すほど信頼が下がります。",
+      "no_effect": [
+        { "measure": "sc_mfa", "reason": "二段階認証は、落とした USB メモリの中身までは守ってくれません。" }
+      ],
+      "glossary": ["backup"],
+      "choices": [
+        { "id": "sc_report", "label": "すぐ先生に報告する", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 1, "trust_delta": 0,
+          "result_text": "すぐ報告したので、先生と一緒に落とし物の届け出まで対応できました。" },
+        { "id": "sc_hide", "label": "黙っておく", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.5, "downtime_days": 5, "trust_delta": -8, "risky": true,
+          "result_text": "あとから見つかり、落としたことより黙っていたことが問題になりました。" }
+      ]
+    },
+    {
+      "turn": 3,
+      "id": "sc_mail",
+      "name": "「先生から」を装った偽メールで、名簿を送るよう頼まれた",
+      "base_damage": 25000,
+      "public": false,
+      "situation": [
+        "「先生」を名乗るメールが届き、名簿を送るよう頼まれました。",
+        "アドレスをよく見ると、学校のものとは少し違っています。"
+      ],
+      "mitigations": { "sc_study": 60, "sc_password": 20 },
+      "learning": "急がせる連絡ほど、別の方法で本人にたしかめると防げます。",
+      "no_effect": [
+        { "measure": "sc_backup", "reason": "バックアップはデータを戻す仕組みです。送ってしまった名簿は取り返せません。" }
+      ],
+      "glossary": ["phishing"],
+      "choices": [
+        { "id": "sc_confirm", "label": "本人に直接たしかめる", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 0, "trust_delta": 0,
+          "result_text": "職員室で直接聞くと、先生はそんなメールを送っていませんでした。" },
+        { "id": "sc_send", "label": "言われたとおりに送る", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.5, "downtime_days": 0, "trust_delta": -8, "risky": true,
+          "result_text": "名簿を、知らない相手に送ってしまいました。" }
+      ]
+    }
+  ],
+
+  "_comment_lessons": "まとめ画面（付録 F.5）で再掲する、学んだ 3 点。",
+  "lessons": [
+    "0 円でできる対策があります。パスワードを変える、二段階認証を ON にするはお金がかかりません。",
+    "事故は隠すほど信頼が下がります。すぐ報告するほうが、結果として傷は浅く済みます。",
+    "確認する習慣がいちばん効きます。偽メールは、本人に直接たしかめれば防げます。"
+  ],
+  "bridge_text": "ここからは会社が舞台になります。お金の桁が大きくなりますが、考え方は同じです。"
+}

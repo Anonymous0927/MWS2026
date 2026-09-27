@@ -1,0 +1,36 @@
+{
+  "_comment": "施策（v2 で追加）。対策が『買い切りの設備』なのに対し、施策は『毎年やる取り組み』である。効果はその年かぎりで、翌年には消える。人への投資は続けないと効かないことを表すための仕組み。",
+
+  "_comment_cost": "cost_base はもとの費用、cost_per_employee は社員 1 人あたりの上乗せ。実際の費用は cost_base + cost_per_employee × 社員数 で、会社が大きくなるほど高くつく。",
+
+  "_comment_effect": "awareness はセキュリティ意識の増減。axes はその年だけ 7 観点に上乗せされる値。event_weight は事件の抽選の重みへの倍率で、1.0 未満なら起きにくくなる。",
+
+  "actions": [
+    {
+      "id": "training",
+      "name": "セキュリティ研修",
+      "formal_name": "セキュリティ教育",
+      "cost_base": 4,
+      "cost_per_employee": 0.4,
+      "summary": "人が「あやしい」と気づけるようにする",
+      "weakness": "機械の設定ミスや、攻撃そのものは止められない",
+      "awareness": 18,
+      "axes": { "phishing": 25, "malware": 10, "credential": 10 },
+      "event_weight": {},
+      "glossary": ["phishing", "risk_management"]
+    },
+    {
+      "id": "audit",
+      "name": "監査の実施",
+      "formal_name": "内部監査",
+      "cost_base": 12,
+      "cost_per_employee": 0.2,
+      "summary": "決めたとおりに運用できているかを確かめる",
+      "weakness": "その場を確かめるだけで、攻撃を止める力はない",
+      "awareness": 6,
+      "axes": { "insider": 25, "availability": 5 },
+      "event_weight": { "insider": 0.5, "misconfig": 0.6 },
+      "glossary": ["insider", "risk_management"]
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "_comment": "用語集（付録 E）。description は 2 行以内。reading は並べ替えと検索に使う。appears_in には対策 id と事件 id を混ぜて書いてよい。用語を増やすときは、ここに 1 件足すだけでよい。",
+  "terms": [
+    {
+      "id": "firewall",
+      "formal": "ファイアウォール",
+      "reading": "ふぁいあうぉーる",
+      "easy": "通信の関所",
+      "description": [
+        "外と社内のあいだに置いて、通してよい通信かどうかを",
+        "決まりに従ってふるい分けるしくみ。"
+      ],
+      "appears_in": ["firewall", "remote", "supplychain"]
+    },
+    {
+      "id": "edr",
+      "formal": "EDR",
+      "reading": "いーでぃーあーる",
+      "easy": "パソコンの中の見張り役",
+      "description": [
+        "パソコンの中の動きをいつも記録し、あやしい動きを見つけたら",
+        "その場で止めたり、あとから追いかけたりできるしくみ。"
+      ],
+      "appears_in": ["edr", "ransomware", "usb"]
+    },
+    {
+      "id": "patch",
+      "formal": "パッチ適用",
+      "reading": "ぱっちてきよう",
+      "easy": "見つかった穴をふさぐ",
+      "description": [
+        "ソフトに見つかった弱点を直すための更新を、あてて回ること。",
+        "何がどこにあるかを把握していないと、あて漏れが出る。"
+      ],
+      "appears_in": ["patch", "misconfig", "supplychain"]
+    },
+    {
+      "id": "awareness",
+      "formal": "セキュリティ意識",
+      "reading": "せきゅりてぃいしき",
+      "easy": "気をつける気持ち",
+      "description": [
+        "あやしいものに気づき、決めた手順を守ろうとする気持ちのこと。",
+        "研修をやめると時間とともに薄れていく。"
+      ],
+      "appears_in": ["training", "audit"]
+    },
+    {
+      "id": "malware",
+      "formal": "マルウェア",
+      "reading": "まるうぇあ",
+      "easy": "悪さをするプログラム",
+      "description": [
+        "パソコンやスマホの中で、持ち主が望まない動きをするプログラムのこと。",
+        "ウイルスもこの仲間。"
+      ],
+      "appears_in": ["edr", "usb", "patch"]
+    },
+    {
+      "id": "ransomware",
+      "formal": "ランサムウェア",
+      "reading": "らんさむうぇあ",
+      "easy": "データを人質にとるウイルス",
+      "description": [
+        "パソコンの中のファイルを勝手に暗号化して読めなくし、",
+        "元に戻す代わりにお金を要求するプログラムのこと。"
+      ],
+      "appears_in": ["ransomware", "backup"]
+    },
+    {
+      "id": "phishing",
+      "formal": "フィッシング",
+      "reading": "ふぃっしんぐ",
+      "easy": "偽サイトへのおびき出し",
+      "description": [
+        "本物そっくりのメールやサイトを見せて、",
+        "ID やパスワードを入力させて盗む手口。"
+      ],
+      "appears_in": ["phishing", "mailfilter", "bec", "training"]
+    },
+    {
+      "id": "antivirus",
+      "formal": "アンチウイルス",
+      "reading": "あんちういるす",
+      "easy": "ウイルス対策ソフト",
+      "description": [
+        "悪いプログラムを見つけて止めるソフト。知られていない新種は見逃すことがあり、",
+        "いまは動きから見つける EDR と組み合わせるのが普通になっている。"
+      ],
+      "appears_in": ["edr", "usb", "ransomware"]
+    },
+    {
+      "id": "mfa",
+      "formal": "多要素認証（MFA）",
+      "reading": "たようそにんしょう",
+      "easy": "二段階でのログイン",
+      "description": [
+        "パスワードに加えて、スマホに届く番号などを",
+        "もう 1 つ確認するしくみ。"
+      ],
+      "appears_in": ["mfa", "credential", "remote", "phishing"]
+    },
+    {
+      "id": "vpn",
+      "formal": "VPN",
+      "reading": "ぶいぴーえぬ",
+      "easy": "安全な通り道",
+      "description": [
+        "外から社内につなぐとき、通信を暗号化して",
+        "中身を見られないようにするしくみ。"
+      ],
+      "appears_in": ["vpn", "remote"]
+    },
+    {
+      "id": "waf",
+      "formal": "WAF",
+      "reading": "わふ",
+      "easy": "Web サイト専門の門番",
+      "description": [
+        "Web サイトへの入力を中身まで見て、",
+        "攻撃らしい内容を止めるしくみ。"
+      ],
+      "appears_in": ["waf", "ddos"]
+    },
+    {
+      "id": "ddos",
+      "formal": "DDoS 攻撃",
+      "reading": "でぃーどすこうげき",
+      "easy": "大量アクセスでの妨害",
+      "description": [
+        "世界中の機器から一斉にアクセスを送り、",
+        "サービスを止めてしまう攻撃。"
+      ],
+      "appears_in": ["ddos", "waf"]
+    },
+    {
+      "id": "availability",
+      "formal": "可用性",
+      "reading": "かようせい",
+      "easy": "止まらないこと",
+      "description": [
+        "使いたいときに、いつでも使える状態のこと。",
+        "止まること自体が損害になる。"
+      ],
+      "appears_in": ["ddos", "waf"]
+    },
+    {
+      "id": "backup",
+      "formal": "バックアップ",
+      "reading": "ばっくあっぷ",
+      "easy": "データの控え",
+      "description": [
+        "大事なデータを、別の場所にも保存しておくこと。",
+        "消えても戻せる。"
+      ],
+      "appears_in": ["backup", "ransomware"]
+    },
+    {
+      "id": "log",
+      "formal": "ログ",
+      "reading": "ろぐ",
+      "easy": "操作の記録",
+      "description": [
+        "誰がいつ何をしたかの記録。",
+        "攻撃は止められないが、気づくために要る。"
+      ],
+      "appears_in": ["logging", "insider", "supplychain"]
+    },
+    {
+      "id": "bec",
+      "formal": "ビジネスメール詐欺（BEC）",
+      "reading": "びじねすめーるさぎ",
+      "easy": "偽の振込メール",
+      "description": [
+        "取引先や上司になりすまして、",
+        "お金を振り込ませようとする手口。"
+      ],
+      "appears_in": ["bec", "mailfilter"]
+    },
+    {
+      "id": "insider",
+      "formal": "内部不正",
+      "reading": "ないぶふせい",
+      "easy": "社内の人による持ち出し",
+      "description": [
+        "正しい権限を持つ人が、情報を持ち出したり",
+        "悪用したりすること。"
+      ],
+      "appears_in": ["insider", "policy", "logging", "usb"]
+    },
+    {
+      "id": "supply_chain",
+      "formal": "サプライチェーン攻撃",
+      "reading": "さぷらいちぇーんこうげき",
+      "easy": "取引先を経由した攻撃",
+      "description": [
+        "自社ではなく、つながっている取引先を破ってから",
+        "入ってくる攻撃。"
+      ],
+      "appears_in": ["supplychain"]
+    },
+    {
+      "id": "encryption",
+      "formal": "暗号化",
+      "reading": "あんごうか",
+      "easy": "読めなくすること",
+      "description": [
+        "決められた鍵がないと中身を読めない形に変えること。",
+        "盗まれても中身は守れる。"
+      ],
+      "appears_in": ["encryption", "vpn", "ransomware"]
+    },
+    {
+      "id": "misconfig",
+      "formal": "設定ミス",
+      "reading": "せっていみす",
+      "easy": "うっかり公開",
+      "description": [
+        "公開の設定を間違えて、見せるつもりのない情報が",
+        "誰でも見られる状態になること。"
+      ],
+      "appears_in": ["misconfig", "policy"]
+    },
+    {
+      "id": "cia",
+      "formal": "情報セキュリティの 3 要素",
+      "reading": "じょうほうせきゅりてぃのさんようそ",
+      "easy": "守るべき 3 つの性質",
+      "description": [
+        "機密性（見せない）・完全性（変えられない）・",
+        "可用性（止まらない）の 3 つ。"
+      ],
+      "appears_in": ["misconfig", "ddos"]
+    },
+    {
+      "id": "risk_management",
+      "formal": "リスクマネジメント",
+      "reading": "りすくまねじめんと",
+      "easy": "危険との付き合い方",
+      "description": [
+        "危険をゼロにはできない前提で、どこに、どれだけ",
+        "お金と手間をかけるかを決めること。"
+      ],
+      "appears_in": ["training", "quiet"]
+    },
+    {
+      "id": "opportunity_loss",
+      "formal": "機会損失",
+      "reading": "きかいそんしつ",
+      "easy": "売れたはずの分",
+      "description": [
+        "止まっていた間に売れたはずの売上。",
+        "実際にお金が減らなくても損になる。"
+      ],
+      "appears_in": ["ddos"]
+    },
+    {
+      "id": "password",
+      "formal": "パスワードの使い回し",
+      "reading": "ぱすわーどのつかいまわし",
+      "easy": "同じ合言葉の使い回し",
+      "description": [
+        "複数のサービスで同じパスワードを使うこと。",
+        "1 か所漏れると全部が危なくなる。"
+      ],
+      "appears_in": ["credential", "mfa"]
+    }
+  ]
+}

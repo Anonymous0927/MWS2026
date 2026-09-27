@@ -1,0 +1,357 @@
+{
+  "_comment": "事件 11 種（v2。「平穏な一年」も 1 つの事件として数える）。効きめは 対策 id → 0〜100 の整数で、合計の上限は config.json の mitigation_cap。choices の定義順は計算や検証のため無難な順に保ち、画面に出すときだけ毎シーズン並べ替える。requires を持つ選択肢は「その対策を買っていないと選べない」形で画面に残り、これが本作の核（要件定義書 EV-1 / EV-2）。",
+
+  "_comment_damage": "v2 で基本の被害を 1.8 倍、v3 でさらに 1.2 倍にした。年間維持費と収入を上げたぶん、そして v3 で対策の効きめが ver の割合ぶんに減ったぶん、守らない会社がきちんと倒れるようにするためである。修正内容15では、必要な対策を持っていると選べる有効な対応の damage_scale を約 3 割下げた。ランサムウェアは式を検算する基準の選択肢を保ち、必要なバックアップの効きめを 55 から 65 に上げた。守りと対応の両方ができた会社の減りを抑えつつ、無対策や危険な対応の被害は据え置く調整である。",
+
+  "_comment_weight": "weight は抽選の重み。**0 は「抽選に出さない」という意味**である（events.py の weight_of がそこだけ 0 のまま返す）。v4（修正内容4）で「平穏な一年」を 0 にした。前兆を毎年出す試みと組みで、前兆が出たのに何も起きない年を無くし、前兆と事件の結びつきを確かめられるようにするためである。もとの値は 12 で、ここを 12 に戻せば v3 までの遊びに戻る。**0 のあいだは平穏な一年が来ないので、そこでしか起きない好イベント（config.json の bonus）も起きない。**",
+  "_comment_v2": "v2 で 3 つ足した。axes はこの事件がどの観点を突いてくるか（画面の説明に使う）。human_error が true の事件は、社員のミスが起点なので、セキュリティ意識が高いほど抽選で選ばれにくくなる。omen は前兆の文章で、前の年に出ることがある。",
+
+  "events": [
+    {
+      "id": "phishing",
+      "name": "偽メールにだまされる（フィッシング）",
+      "base_damage": 86,
+      "weight": 12,
+      "public": false,
+      "requires_facility": null,
+      "human_error": true,
+      "axes": ["phishing", "credential"],
+      "omen": "同業の会社で、取引先を装ったメールの被害が出たと報道されました。",
+      "situation": [
+        "取引先を装ったメールのリンクを、社員が開いてしまいました。",
+        "入力した ID とパスワードが、そのまま外に漏れたおそれがあります。"
+      ],
+      "mitigations": { "mailfilter": 45, "mfa": 30, "edr": 15 },
+      "learning": "人が気づけると被害はかなり減ります。機械では止めきれない攻撃の最後の砦は、人の判断です。",
+      "no_effect": [
+        { "measure": "firewall", "reason": "ファイアウォールは、社員が自分から外へ出ていく通信までは止められません。" }
+      ],
+      "glossary": ["phishing", "mfa"],
+      "choices": [
+        { "id": "block", "label": "二要素認証で、入られる前に止める", "requires": "mfa",
+          "extra_cost": 0, "damage_scale": 0.35, "downtime_days": 0, "trust_delta": 2,
+          "result_text": "侵入は防げましたが、漏れたパスワードの変更や社内調査に対応コストがかかりました。" },
+        { "id": "share", "label": "すぐ社内に共有して、開封した人を確かめる", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 1, "trust_delta": 0,
+          "result_text": "被害を1名に留め、すぐパスワードを変えさせましたが、対応までに一部の情報を盗み見られました。" },
+        { "id": "wait", "label": "大ごとにしたくないので、様子を見る", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.5, "downtime_days": 3, "trust_delta": -6, "risky": true,
+          "result_text": "対応を後回しにしたため、そのあいだアカウントが使われ続けてしまいました。" }
+      ]
+    },
+    {
+      "id": "credential",
+      "name": "パスワード使い回しで不正ログイン",
+      "base_damage": 108,
+      "weight": 11,
+      "public": true,
+      "requires_facility": null,
+      "human_error": true,
+      "axes": ["credential"],
+      "omen": "よそのサービスから大量のパスワードが流出した、というニュースが流れました。",
+      "situation": [
+        "よそのサービスから漏れたパスワードで、社内のシステムに入られました。",
+        "同じパスワードを、いくつものサービスで使い回していた社員がいました。"
+      ],
+      "mitigations": { "mfa": 65, "logging": 20, "vpn": 10 },
+      "learning": "同じパスワードを別のサービスで使うと、1 か所破られただけで全部が危なくなります。",
+      "no_effect": [
+        { "measure": "edr", "reason": "端末の監視は、正しいパスワードで入ってきた相手を見分けられません。" }
+      ],
+      "glossary": ["password", "mfa"],
+      "choices": [
+        { "id": "block_mfa", "label": "二要素認証で、パスワード突破後の侵入を止める", "requires": "mfa",
+          "extra_cost": 0, "damage_scale": 0.35, "downtime_days": 0, "trust_delta": 2,
+          "result_text": "パスワードは破られましたが、二要素認証のおかげで侵入されずに済みました。" },
+        { "id": "reset_all", "label": "全員のパスワードをすぐ変える", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 2, "trust_delta": 0,
+          "result_text": "全員のパスワードを変え、二度と使い回さないルールを徹底しました。" },
+        { "id": "reset_one", "label": "その人のパスワードだけ変える", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.4, "downtime_days": 1, "trust_delta": -6, "risky": true,
+          "result_text": "使い回していた別の社員のアカウントからも、あとから侵入されてしまいました。" }
+      ]
+    },
+    {
+      "id": "ransomware",
+      "name": "データを人質にとられる（ランサムウェア）",
+      "base_damage": 216,
+      "weight": 10,
+      "public": true,
+      "requires_facility": null,
+      "human_error": false,
+      "axes": ["malware", "recovery"],
+      "omen": "国内の会社が、データを人質にとられて業務を止めたと報じられました。",
+      "situation": [
+        "社員が開いた添付ファイルから、社内のデータが暗号化されました。",
+        "元に戻すためのお金を要求する画面が出ています。"
+      ],
+      "mitigations": { "backup": 65, "edr": 25, "mailfilter": 15, "patch": 10 },
+      "learning": "控えがあるかどうかで結果が変わります。防ぐ力と、やられたあとに戻す力の両方が要ります。",
+      "no_effect": [
+        { "measure": "mailfilter", "reason": "怪しいメール対策はすり抜けられました。完全に防げる仕組みはありません。" }
+      ],
+      "glossary": ["ransomware", "backup"],
+      "choices": [
+        { "id": "restore", "label": "バックアップから戻す", "requires": "backup",
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 2, "trust_delta": 0,
+          "result_text": "バックアップから元に戻せました。業務は 2 日で再開しました。" },
+        { "id": "rebuild", "label": "自分たちで作り直す", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.4, "downtime_days": 10, "trust_delta": -4,
+          "result_text": "作り直しに 10 日かかり、戻らなかったデータもあります。" },
+        { "id": "pay", "label": "お金を払って元に戻してもらう", "requires": null,
+          "extra_cost": 80, "damage_scale": 1.0, "downtime_days": 5, "trust_delta": -8, "risky": true,
+          "result_text": "お金を払いましたが、戻りませんでした。" }
+      ]
+    },
+    {
+      "id": "usb",
+      "name": "USB から感染が広がる",
+      "base_damage": 108,
+      "weight": 10,
+      "public": false,
+      "requires_facility": null,
+      "human_error": true,
+      "axes": ["malware", "insider"],
+      "omen": "拾った USB メモリをさして感染した例が、業界誌で取り上げられました。",
+      "situation": [
+        "社員が家から持ってきた USB メモリを、事務所のパソコンにさしました。",
+        "そこを起点に、社内のパソコンへ次々と感染が広がっています。"
+      ],
+      "mitigations": { "policy": 40, "edr": 35, "patch": 15 },
+      "learning": "攻撃の入口はネットワークだけではありません。物として持ち込まれる経路もあります。",
+      "no_effect": [
+        { "measure": "firewall", "reason": "ファイアウォールは通信の入口を見張る仕組みです。手で持ち込まれたものには関係しませんでした。" }
+      ],
+      "glossary": ["malware", "insider"],
+      "choices": [
+        { "id": "isolate", "label": "すぐネットから切り離す", "requires": "policy",
+          "extra_cost": 0, "damage_scale": 0.5, "downtime_days": 2, "trust_delta": 2,
+          "result_text": "素早くネットから切り離したため被害が最小限で済みました。。" },
+        { "id": "cleanup", "label": "1 台ずつ調べて駆除する", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 4, "trust_delta": 0,
+          "result_text": "全部のパソコンを調べ終えるまでに、4 日かかりました。" },
+        { "id": "keep_using", "label": "動いているパソコンはそのまま使う", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.5, "downtime_days": 7, "trust_delta": -6, "risky": true,
+          "result_text": "使い続けたパソコンから、さらに感染が広がってしまいました。" }
+      ]
+    },
+    {
+      "id": "remote",
+      "name": "家のパソコンから会社に侵入される",
+      "base_damage": 130,
+      "weight": 10,
+      "public": true,
+      "requires_facility": "remote",
+      "human_error": false,
+      "axes": ["intrusion", "credential"],
+      "omen": "在宅勤務の回線をねらった攻撃が増えている、と注意喚起が出ました。",
+      "situation": [
+        "在宅で働く社員のパソコンは、家族と共用のものでした。",
+        "そこを踏み台にして、会社のネットワークに入られました。"
+      ],
+      "mitigations": { "vpn": 45, "mfa": 25, "logging": 15, "firewall": 10 },
+      "learning": "働き方が変わると、守る場所も変わります。事業の変化は攻撃面の変化です。",
+      "no_effect": [
+        { "measure": "waf", "reason": "サイトを守る対策は、Web サイトを守る仕組みです。社員の家のパソコンには何もできませんでした。" }
+      ],
+      "glossary": ["vpn", "mfa"],
+      "choices": [
+        { "id": "cut_one", "label": "VPNのルールに沿って、その接続だけ止める", "requires": "vpn",
+          "extra_cost": 0, "damage_scale": 0.5, "downtime_days": 1, "trust_delta": 2,
+          "result_text": "決めてあった手順どおりに、該当するアカウントの接続だけを速やかに遮断できました。" },
+        { "id": "cut_all", "label": "在宅の接続を、いったん全部止める", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 3, "trust_delta": 0,
+          "result_text": "安全にはなりましたが、在宅の人は 3 日間仕事ができませんでした。" },
+        { "id": "keep", "label": "仕事を止めたくないので、そのまま続ける", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.5, "downtime_days": 0, "trust_delta": -8, "risky": true,
+          "result_text": "業務は止まりませんでしたが、そのあいだずっと侵入され続けていました。" }
+      ]
+    },
+    {
+      "id": "ddos",
+      "name": "ネットショップが止まる（DDoS 攻撃）",
+      "base_damage": 130,
+      "weight": 10,
+      "public": false,
+      "requires_facility": "shop",
+      "human_error": false,
+      "axes": ["availability"],
+      "omen": "通販サイトをねらった大量アクセスによる攻撃が続いている、と報じられました。",
+      "situation": [
+        "ネットショップに、世界中から大量のアクセスが送りつけられています。",
+        "お客さんがページを開けず、注文がまったく入らなくなりました。"
+      ],
+      "mitigations": { "ddos": 55, "waf": 25, "logging": 10 },
+      "learning": "情報が漏れていなくても、止まること自体が損害になります。これを可用性といいます。",
+      "no_effect": [
+        { "measure": "mailfilter", "reason": "怪しいメール対策はメールを監視する仕組みです。Web サイトへ直接送られる大量のアクセスを防ぐことはできませんでした。" }
+      ],
+      "glossary": ["ddos", "waf", "availability", "opportunity_loss"],
+      "choices": [
+        { "id": "filter", "label": "大量アクセス対策で、攻撃だけをよける", "requires": "ddos",
+          "extra_cost": 0, "damage_scale": 0.4, "downtime_days": 0, "trust_delta": 2,
+          "result_text": "攻撃のアクセスだけをより分け、お店を通常通り営業し続けられました" },
+        { "id": "emergency", "label": "急いで対策サービスを契約する", "requires": null,
+          "extra_cost": 30, "damage_scale": 1.0, "downtime_days": 2, "trust_delta": -2,
+          "result_text": "急いで契約したぶん割高になりましたが、2 日で開けるようになりました。" },
+        { "id": "wait", "label": "おさまるまで待つ", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.4, "downtime_days": 6, "trust_delta": -6, "risky": true,
+          "result_text": "6 日間お店を開けられず、お客さんは別の店へ行ってしまいました。" }
+      ]
+    },
+    {
+      "id": "misconfig",
+      "name": "設定ミスで個人情報が見えてしまう",
+      "base_damage": 130,
+      "weight": 9,
+      "public": true,
+      "requires_facility": null,
+      "human_error": true,
+      "axes": ["insider", "intrusion"],
+      "omen": "クラウドの公開設定の間違いによる情報漏えいが、続けて報じられました。",
+      "situation": [
+        "公開の設定を間違えて、お客さんの名簿が誰でも見られる状態でした。",
+        "外部からの連絡を受けて、はじめて気づきました。"
+      ],
+      "mitigations": { "patch": 30, "policy": 25, "logging": 25 },
+      "learning": "攻撃されなくても情報は漏れます。自分たちのミスも立派なリスクです。",
+      "no_effect": [
+        { "measure": "edr", "reason": "端末を監視する仕組みでは、自分たちの設定ミスに気づけません。悪意のあるプログラムの動きではないからです。" }
+      ],
+      "glossary": ["misconfig", "cia"],
+      "choices": [
+        { "id": "check_log", "label": "記録を調べ、見られた範囲を確かめて知らせる", "requires": "logging",
+          "extra_cost": 0, "damage_scale": 0.5, "downtime_days": 1, "trust_delta": 0,
+          "result_text": "記録があったので「どこまで見られたか」を正確に説明できました。" },
+        { "id": "fix_and_tell", "label": "すぐ設定を直して、お客さんに知らせる", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 1, "trust_delta": 0,
+          "result_text": "正直に知らせたことで、大きな不信にはつながりませんでした。" },
+        { "id": "quiet_fix", "label": "こっそり設定だけ直しておく", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.3, "downtime_days": 0, "trust_delta": -8, "risky": true,
+          "result_text": "あとから外部に指摘され、隠していたことのほうが問題になりました。" }
+      ]
+    },
+    {
+      "id": "insider",
+      "name": "やめる人がデータを持ち出す",
+      "base_damage": 151,
+      "weight": 9,
+      "public": true,
+      "requires_facility": null,
+      "human_error": false,
+      "axes": ["insider"],
+      "omen": "退職者による情報の持ち出しで、会社が訴えられた例が紹介されました。",
+      "situation": [
+        "来月やめる社員が、お客さんの名簿を持ち出していました。",
+        "その社員には、もともとそのデータを見る権限がありました。"
+      ],
+      "mitigations": { "logging": 45, "policy": 25, "encryption": 15, "mfa": 10 },
+      "learning": "危険は外からだけではありません。正しい権限を持つ人の持ち出しは、境界を守る対策では止まりません。",
+      "no_effect": [
+        { "measure": "firewall", "reason": "ファイアウォールは外から来る通信を止める道具です。正しい権限を持つ人の持ち出しは止められません。" }
+      ],
+      "glossary": ["insider", "log"],
+      "choices": [
+        { "id": "trace", "label": "記録から、持ち出した範囲を特定する", "requires": "logging",
+          "extra_cost": 0, "damage_scale": 0.5, "downtime_days": 1, "trust_delta": 2,
+          "result_text": "いつ何を持ち出したかが記録に残っていたため、速やかに証拠を提示して回収対応が進められました。" },
+        { "id": "ask", "label": "本人に事情を聞き、返してもらう", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 2, "trust_delta": 0,
+          "result_text": "話し合って返してもらいましたが、すでに複製されているリスクは消えませんでした。" },
+        { "id": "do_nothing", "label": "もうやめる人なので、何もしない", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.4, "downtime_days": 0, "trust_delta": -8, "risky": true,
+          "result_text": "あとで名簿が外に出回り、お客さんからの問い合わせが相次ぎました。" }
+      ]
+    },
+    {
+      "id": "supplychain",
+      "name": "取引先のパソコン経由で入られる",
+      "base_damage": 130,
+      "weight": 9,
+      "public": false,
+      "requires_facility": null,
+      "human_error": false,
+      "axes": ["intrusion", "recovery"],
+      "omen": "取引先を踏み台にした攻撃が広がっている、と注意喚起が出ました。",
+      "situation": [
+        "取引先のパソコンが乗っ取られ、そこから社内に入られました。"
+      ],
+      "mitigations": { "logging": 35, "firewall": 20, "backup": 20, "patch": 15 },
+      "learning": "自社だけ守っても防ぎきれません。つながっている相手も、自社の安全の一部です。",
+      "no_effect": [
+        { "measure": "mfa", "reason": "二要素認証はログイン時の本人確認を行う仕組みです。正規の取引先のアカウントや接続経路を使って侵入された場合は防げませんでした。。" }
+      ],
+      "glossary": ["supply_chain", "log"],
+      "choices": [
+        { "id": "detect", "label": "記録を見て、いつ入られたかを突き止める", "requires": "logging",
+          "extra_cost": 0, "damage_scale": 0.5, "downtime_days": 2, "trust_delta": 2,
+          "result_text": "侵入時期が特定できたため、それ以降の影響範囲に絞って効率よく調べ直せました。" },
+        { "id": "cut", "label": "取引先とのネットワークを、いったん切る", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 3, "trust_delta": 0,
+          "result_text": "広がりは止まりましたが、取引そのものが 3 日止まりました。" },
+        { "id": "leave_it", "label": "取引先の対応にまかせる", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.4, "downtime_days": 5, "trust_delta": -6, "risky": true,
+          "result_text": "相手の対応を待つあいだに、社内の被害が広がってしまいました。" }
+      ]
+    },
+    {
+      "id": "bec",
+      "name": "偽の振込メール（取引先のふり）",
+      "base_damage": 173,
+      "weight": 8,
+      "public": false,
+      "requires_facility": null,
+      "human_error": true,
+      "axes": ["phishing", "insider"],
+      "omen": "経理をねらった偽の振込依頼が増えている、と金融機関から注意が来ました。",
+      "situation": [
+        "取引先の担当者をよそおって「振込先が変わった」とメールが来ました。",
+        "「今日中にお願いします」と急がせる文面で、経理あてに届いています。"
+      ],
+      "mitigations": { "policy": 40, "mailfilter": 30, "logging": 10 },
+      "learning": "お金そのものをねらう攻撃もあります。急がせる連絡ほど、別の手段で確認することが効きます。",
+      "no_effect": [
+        { "measure": "backup", "reason": "バックアップはデータを戻す仕組みです。振り込んでしまったお金は戻せません。" }
+      ],
+      "glossary": ["bec", "phishing"],
+      "choices": [
+        { "id": "call", "label": "ルールどおり、電話で相手に直接たしかめる", "requires": "policy",
+          "extra_cost": 0, "damage_scale": 0.3, "downtime_days": 0, "trust_delta": 2,
+          "result_text": "決めてあったとおり電話で確認し、振り込む前に気づけました。" },
+        { "id": "double_check", "label": "上司ともう一度、内容を見直す", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 1, "trust_delta": 0,
+          "result_text": "手続き中に上司と不自然な点に気づき、追加の振込を止めたことで被害を一部にとどめました。" },
+        { "id": "pay", "label": "急ぎと書いてあるので、そのまま振り込む", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.4, "downtime_days": 0, "trust_delta": -6, "risky": true,
+          "result_text": "偽の口座に振り込んでしまい、お金は戻ってきませんでした。" }
+      ]
+    },
+    {
+      "id": "quiet",
+      "name": "平穏な一年",
+      "base_damage": 0,
+      "weight": 0,
+      "public": false,
+      "requires_facility": null,
+      "human_error": false,
+      "axes": [],
+      "omen": "",
+      "situation": [
+        "今年は、大きな事件が起きませんでした。",
+        "この 1 年をどう使うかで、来年からの守りが変わります。"
+      ],
+      "mitigations": {},
+      "learning": "何も起きない年もあります。事件が起きなかったことは、対策が無駄だったことを意味しません。",
+      "no_effect": [],
+      "glossary": ["risk_management"],
+      "choices": [
+        { "id": "inspect", "label": "落ち着いているうちに、社内を点検する", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 0, "trust_delta": 0,
+          "result_text": "大きな問題は見つかりませんでしたが、確かめられたこと自体が収穫です。" },
+        { "id": "as_usual", "label": "いつもどおり業務を続ける", "requires": null,
+          "extra_cost": 0, "damage_scale": 1.0, "downtime_days": 0, "trust_delta": 0,
+          "result_text": "静かな 1 年でした。事件が起きなかったのは、運だけではありません。" }
+      ]
+    }
+  ]
+}

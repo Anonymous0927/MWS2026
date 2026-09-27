@@ -1,0 +1,105 @@
+{
+  "_comment": "ゲーム全体の数値。難易度を変えたいときはこのファイルだけを編集する。金額の単位は万円。",
+
+  "total_years": 10,
+
+  "_comment_initial": "会社編の初期状態（要件定義書 3.3 節・付録 C.1）。v3 で初期資金を 80 → 160 万円に上げた。1 年にできる工事が 3 件までになり、序盤は守りがそろわないまま事件を受けるので、そこを持ちこたえるための元手が要る。ここを下げるほど序盤が厳しくなる。",
+  "initial": { "money": 160, "employees": 20, "trust": 100, "morale": 80 },
+
+  "_comment_economy": "もうけ = floor(社員数 × profit_per_employee × 信用度 ÷ 100)。v2 で 3 → 6 に上げた。年間維持費という毎年の固定費が加わったぶん、収入も増やさないと、守りを固めた会社ほど先に潰れてしまうためである。あわせて事件の基本の被害も上げてあり（events.json）、守らない会社は以前より速く倒れる。v3 では据え置き。信用度が掛かるので、被害を出し続けると収入そのものが細っていく（これが「守らない会社が倒れる」道筋である）。tools/balance_check.py で確かめられる。",
+  "economy": { "profit_per_employee": 6 },
+
+  "_comment_rules": "計算に使う値（要件定義書 6.3〜6.5 節・付録 C.2）。mitigation_cap を 100 にすると被害が 0 になり、本作の前提が壊れるため 1〜99 しか許さない。v3 で trust_penalty_divisor を 10 → 8（被害が信用度に響きやすく）、public_penalty を 5 → 3 に変えた。上限 90 のせいで被害が 0 になる年はほとんど無いので、public_penalty は「世間に知られる事件を引いた年の罰」ではなく毎年の固定の目減りとして効いてしまう。守りを固めた会社の信用度まで落としきってしまうため、罰そのものは残したうえで軽くしてある。",
+  "_comment_morale": "満足度の増減だけは付録 C.2 の値（被害の年 −2 / 無事故の年 +2）から変えてある。効きめの上限が 90 である以上、事件が起きた年の被害が 0 になることはなく、+2 が入るのは「平穏な一年」を引いた年だけになる。付録 C.2 のままだと満足度が下がる一方で、クリア条件の 70 以上にほぼ届かず（付録 G のお手本プレイも満足度 62 で満足度だけ未達）、10.4 節が求める『バランスよく買う』のクリア率 40〜60% を満たせなかった。−1 / +3 にすると 54% になる。tools/balance_check.py で確かめられる。",
+  "rules": {
+    "mitigation_cap": 90,
+    "trust_penalty_divisor": 8,
+    "public_penalty": 3,
+    "trust_recovery_no_damage": 5,
+    "morale_damage": -1,
+    "morale_expansion": -4,
+    "morale_remote": 4,
+    "morale_no_damage": 3
+  },
+
+  "_comment_axes": "セキュリティの 7 観点（v2 で追加）。会社の守りをこの 7 本の棒グラフで見せる。各対策がどの観点に効くかは measures.json の axes で決める。**この値は表示のためだけに使い、被害額の計算には関与しない**（被害額は events.json の mitigations で決まる。要件定義書 6.3 節）。",
+  "axes": [
+    { "id": "intrusion",    "name": "外部侵入対策",   "note": "外から入られないようにする" },
+    { "id": "malware",      "name": "マルウェア対策", "note": "悪いプログラムを止める" },
+    { "id": "phishing",     "name": "フィッシング対策", "note": "だまされないようにする" },
+    { "id": "credential",   "name": "不正ログイン対策", "note": "なりすましを防ぐ" },
+    { "id": "insider",      "name": "内部不正対策",   "note": "中からの持ち出しに備える" },
+    { "id": "availability", "name": "可用性対策",     "note": "止まらないようにする" },
+    { "id": "recovery",     "name": "復旧力",         "note": "やられたあと元に戻す力" }
+  ],
+
+  "_comment_awareness": "社員のセキュリティ意識（v2 で追加）。時が経てば対策の効果は薄れるので、毎ターン decay ぶん下がる。研修や監査で上げ直す。意識が高いと、社員のミスが起点の事件（human_error が true）が抽選で選ばれにくくなる。weight_factor は『意識 100 のとき、人的ミス系の重みを何倍にするか』で、0.4 なら 6 割減る。",
+  "awareness": { "initial": 50, "decay": 5, "weight_factor": 0.4 },
+
+  "_comment_versions": "対策の「ver（バージョン）」（v3 で追加）。対策は買い切りではなく、ver 1 → 2 → 3 と上げていく。上の ver は unlock_year の年になるまで買えない（Win11 が 2012 年に無いのと同じ）。effect_rate は events.json の mitigations に掛ける割合（%）で、100 なら書いてある値がそのまま出る。解禁の年から 1 年経つごとに decay_per_year ポイントずつ落ち、decay_floor より下には落ちない。古い ver のまま放置すると守りが薄くなる、という表現である。実際に出る割合は ver 1：1年目 80 → 4年目 68 → 7年目 56 → 10年目 44、ver 2：4年目 90 → 7年目 78 → 10年目 66、ver 3：7年目 100 → 10年目 88。cost_rate / upkeep_rate は measures.json の cost / upkeep に掛ける割合で、上の ver ほど高くつく。仕組みは src/core/versions.py にまとまっている。",
+  "versions": {
+    "levels": [
+      { "level": 1, "name": "ver 1", "unlock_year": 1, "effect_rate": 80,
+        "cost_rate": 100, "upkeep_rate": 100 },
+      { "level": 2, "name": "ver 2", "unlock_year": 4, "effect_rate": 90,
+        "cost_rate": 110, "upkeep_rate": 160 },
+      { "level": 3, "name": "ver 3", "unlock_year": 7, "effect_rate": 100,
+        "cost_rate": 140, "upkeep_rate": 180 }
+    ],
+    "decay_per_year": 4,
+    "decay_floor": 35
+  },
+
+  "_comment_initial_defense": "もとからの備え（v3 で追加）。パスワードを決めておく、OS を最新にしておくなど、お金をかけずにできる最低限の備えを表す。一度にすべての対策を買えない以上、対策ゼロの年に大きな事件を引くと致命傷になりかねないため、初期値としてこれだけの守りを与える。percent は効きめの合計に足す値で、対策と同じく上限 90 の中で扱う。axis_points は左のステータス列で 7 観点すべてに敷く下駄で、表示のためだけに使う。**上げすぎると「何も買わない」会社まで助けてしまう**（10% で倒産率 95%、14% では 85% まで下がる）。序盤の即死を防ぐのに足りるだけにとどめること。",
+  "initial_defense": { "percent": 10, "axis_points": 10, "name": "もとからの備え" },
+
+  "_comment_work_limit": "1 年に手をつけられる工事の件数（v3 で追加）。導入も強化も 1 件と数える。情報担当は 1 人しかいないので、1 年にできることには限りがある、という表現である。難易度調整の主軸で、per_year × total_years が「その回で使える工事枠の総数」になる。3 × 10 年 = 30 枠に対し、対策 12 種すべてを ver 3 にするには 36 枠必要なので、10 年通しても全部は最新にできない。",
+  "work_limit": { "per_year": 3 },
+
+  "_comment_stars": "その合計 ver 数以上でその★（v3 で「対策の個数」から変更）。対策 12 種 × ver 3 = 最大 36。0=★1 / 3〜7=★2 / 8〜14=★3 / 15〜23=★4 / 24以上=★5。",
+  "stars": { "thresholds": [0, 3, 8, 15, 24] },
+
+  "_comment_score": "総合点は 5 つのめやす × points_per_axis の合計（要件定義書 6.6.1 節）。",
+  "score": { "max_money": 300, "max_damage": 500, "points_per_axis": 200 },
+
+  "_comment_clear": "クリア条件（要件定義書 3.4.1 節）。全年を倒産せずに終えることが 5 つ目の条件。v3 で min_trust を 80 → 70、max_total_damage を 300 → 450 万円に緩めた。守りが段階になったことで、上限 90 に届く年がほとんど無くなり、毎年数十万円の被害と信用度の目減りが必ず残るようになったためである。v2 の値のままだと、要件定義書 10.4 節が求める『バランスよく買う』のクリア率 40〜60% にまったく届かない（16% 前後）。",
+  "clear": { "min_trust": 70, "min_star": 4, "max_total_damage": 450, "min_morale": 70 },
+
+  "ranks": { "S": 800, "A": 700, "B": 600, "C": 500 },
+
+  "_comment_comments": "評価ごとの講評（付録 C.5）。",
+  "comments": {
+    "S": "文句なしです。守りを固めながら、会社も大きくしました。",
+    "A": "経営とセキュリティを両立できました。立派な情報担当です。",
+    "B": "あと一歩。どの条件が足りなかったか、記録を見返してみましょう。",
+    "C": "会社は残りましたが、守りが手薄でした。予算の配り方を見直してみましょう。",
+    "D": "会社を守りきれませんでした。もう一度挑戦してみましょう。"
+  },
+
+  "_comment_facilities": "会社パネルに並べるカード（要件定義書 4.3.3 項）。always が false のものは、対応する拡大を実行した年から表示する。measures はそのカードを守る対策 id で、1 つでも欠けていれば赤にする。",
+  "facilities": [
+    { "id": "office",  "name": "事務所のパソコン", "note": "社員が毎日使う",             "always": true  },
+    { "id": "server",  "name": "会社のサーバ",     "note": "お客さんのデータが入っている", "always": true  },
+    { "id": "shop",    "name": "ネットショップ",   "note": "ネットで商品を売る",         "always": false },
+    { "id": "remote",  "name": "在宅で働く人",     "note": "家から会社につなぐ",         "always": false }
+  ],
+
+  "_comment_expansions": "会社を大きくする（要件定義書 3.6 節）。facility を指定したものは、その年の翌年から対応する事件が抽選に入る。同じ行動は 1 回だけ（v3 から、その年のうちなら押し直して取り消せる）。v3 で費用を 1.4 倍にした。守りに回すお金を削って広げる、という選択にしたいためで、安いままだと「広げるだけ」でも生き延びてしまい、要件定義書 10.4 節の『事業だけ広げる → 倒産率 80〜100%』に届かなかった。",
+  "expansions": [
+    { "id": "hire",   "name": "社員を 10 人増やす",     "cost": 42, "employees": 10, "morale": -4, "facility": null,
+      "summary": "もうけが増えるが、満足度が下がる",     "unlocks": "" },
+    { "id": "remote", "name": "在宅で働けるようにする", "cost": 35, "employees": 0,  "morale": 4,  "facility": "remote",
+      "summary": "働きやすくなるが、守る場所が増える",   "unlocks": "家のパソコンから会社に侵入される" },
+    { "id": "shop",   "name": "ネットショップを開く",   "cost": 91, "employees": 10, "morale": -4, "facility": "shop",
+      "summary": "もうけが増えるが、守る場所が増える",   "unlocks": "ネットショップが止まる（DDoS 攻撃）" }
+  ],
+
+  "_comment_omen": "事件の前兆。one_in=1 につき毎年表示、修正内容13により予告した事件を必ず発生させるようにしてる。follow_up_one_in は、結果表示後に予告とは別の第2事件が発生する確率（N回に1回発生する）。follow_up_start_yearにてかいｓする、weight_boost は旧設定との互換用。",
+  "omen": { "one_in": 1, "weight_boost": 2.5, "follow_up_one_in": 4, "follow_up_start_year": 3 },
+
+  "_comment_bonus": "好イベント（付録 B.2）。平穏な一年のうち one_in 回に 1 回、安全点検に合格して資金と信用度が増える。",
+  "bonus": {
+    "quiet_inspection": { "one_in": 3, "money": 10, "trust": 5,
+                          "text": "安全点検に合格しました。資金 +10 万円、信用度 +5。" }
+  }
+}

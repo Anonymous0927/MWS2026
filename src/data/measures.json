@@ -1,0 +1,232 @@
+{
+  "_comment": "対策 12 種（v2）。金額の単位は万円。増やすときはここに 1 件足すだけでよい。",
+
+  "_comment_versions": "versions は「ver 1 / ver 2 / ver 3 で何ができるようになるか」の説明で、3 行ちょうど必要。v3 で対策は買い切りではなくなり、この 3 段を上げていくものになった。ver が上がると何が変わるのかが、この改造の学習内容の中心である。解禁年・効きめの割合・段ごとの費用の割合は config.json の versions で決まる。",
+
+  "_comment_cost": "cost と upkeep は「ver 1 の基準値」である。ver 2 / ver 3 の金額は、config.json の versions にある cost_rate / upkeep_rate を掛けて求める（例：ファイアウォールの ver 2 は 13 × 110% ＝ 15 万円）。ここを直せば 3 段すべての金額が一緒に動く。v3 で導入費を下げた（12 種の合計 237 → 192 万円）。買い切りではなくなり、同じ対策に 3 回お金を払うことになったぶんの調整である。**下げ幅は安いものほど大きくしてある**（ポリシーは 0.75 倍、EDR は 0.89 倍）。一律に下げると、どの対策も 1 年ぶんの予算で買えてしまい、「安い順に買う」と「バランスよく買う」の差が出なくなるためである（要件定義書 10.4 節の 2 番目）。**維持費は下げていない。** 全 12 種を ver 3 で保つと年 64 万円かかり、社員 20 人のもうけ 120 万円の半分を超える。",
+
+  "_comment_upkeep": "upkeep は年間維持費。導入費の 10% 前後にしてある。買って放置するだけでは資金が回らないようにするための仕組みで、難易度調整の主軸である。0 にすれば維持費なしに戻せる。",
+
+  "_comment_axes": "axes はセキュリティの 7 観点への寄与（0〜100）。会社の守りをこの 7 本の棒グラフで見せるためだけに使い、被害額の計算には関与しない。被害額はいままでどおり events.json の mitigations で決まる（要件定義書 6.3 節）。観点の一覧は config.json の axes を参照。",
+
+  "_comment_weakness": "weakness（守れないもの）は必須で、空にすると起動時にエラーになる。この欄が本教材の学習内容の中心だからである。",
+
+  "measures": [
+    {
+      "id": "firewall",
+      "name": "ファイアウォール",
+      "formal_name": "FW / ファイアウォール",
+      "cost": 13,
+      "upkeep": 2,
+      "recurring": false,
+      "summary": "外から社内への通信をふるい分ける",
+      "weakness": "正しい入口から入ってくる攻撃は止められない",
+      "belongs_to": ["office", "server"],
+      "axes": { "intrusion": 35, "availability": 10 },
+      "versions": [
+        "入口の通信をふるい分ける",
+        "通信の中身まで見て、あやしいものを止める",
+        "クラウドや在宅の通信もまとめて守る"
+      ],
+      "glossary": ["firewall"]
+    },
+    {
+      "id": "backup",
+      "name": "バックアップ",
+      "formal_name": "バックアップ",
+      "cost": 14,
+      "upkeep": 3,
+      "recurring": false,
+      "summary": "データの控えを別の場所に保存する",
+      "weakness": "情報が外に漏れることは防げない",
+      "belongs_to": ["server"],
+      "axes": { "recovery": 55 },
+      "versions": [
+        "月に一度、別の場所に控えを取る",
+        "毎日取り、書きかえられない場所に置く",
+        "戻す練習まで済ませ、数時間で復旧できる"
+      ],
+      "glossary": ["backup", "ransomware"]
+    },
+    {
+      "id": "vpn",
+      "name": "在宅の接続ルール",
+      "formal_name": "VPN",
+      "cost": 14,
+      "upkeep": 3,
+      "recurring": false,
+      "summary": "家からの通信を安全につなぐ",
+      "weakness": "家族と共用のパソコンの中身までは守れない",
+      "belongs_to": ["remote"],
+      "axes": { "intrusion": 25, "credential": 10 },
+      "versions": [
+        "家からの通信を暗号でつなぐ",
+        "会社の許した端末からしかつなげなくする",
+        "つなぐたびに端末の状態を確かめてから通す"
+      ],
+      "glossary": ["vpn", "encryption"]
+    },
+    {
+      "id": "mailfilter",
+      "name": "怪しいメール対策",
+      "formal_name": "メールフィルタ",
+      "cost": 14,
+      "upkeep": 2,
+      "recurring": false,
+      "summary": "偽メールを自動でよける",
+      "weakness": "本物そっくりのメールはすり抜ける",
+      "belongs_to": ["office"],
+      "axes": { "phishing": 40, "malware": 15 },
+      "versions": [
+        "知られている偽メールをよける",
+        "添付や link を開いて安全か確かめてから渡す",
+        "送り主のなりすましを見破り、届いた後も回収できる"
+      ],
+      "glossary": ["phishing", "bec"]
+    },
+    {
+      "id": "mfa",
+      "name": "二要素認証",
+      "formal_name": "多要素認証 / MFA",
+      "cost": 10,
+      "upkeep": 1,
+      "recurring": false,
+      "summary": "パスワードだけでは入れなくする",
+      "weakness": "パソコン自体がウイルスに感染した場合",
+      "belongs_to": ["server"],
+      "axes": { "credential": 50, "intrusion": 10 },
+      "versions": [
+        "合言葉のほかに、番号をもう 1 つ聞く",
+        "スマホの承認を使い、番号の盗み取りを防ぐ",
+        "端末そのものを鍵にして、合言葉を無くす"
+      ],
+      "glossary": ["mfa", "password"]
+    },
+    {
+      "id": "policy",
+      "name": "セキュリティポリシー",
+      "formal_name": "情報持出・取扱ポリシー",
+      "cost": 6,
+      "upkeep": 1,
+      "recurring": false,
+      "summary": "持ち出しと振込を決めた手順で確かめる",
+      "weakness": "ルールを守らない人がいると効かない",
+      "belongs_to": ["office"],
+      "axes": { "insider": 30, "phishing": 10 },
+      "versions": [
+        "持ち出しと振込の手順を文書で決める",
+        "決めた手順を全員に配り、年に一度確かめる",
+        "手順どおりかを仕組みで確かめ、外れたら止める"
+      ],
+      "glossary": ["insider", "misconfig"]
+    },
+    {
+      "id": "patch",
+      "name": "資産・パッチ管理",
+      "formal_name": "資産管理 / パッチ適用",
+      "cost": 20,
+      "upkeep": 3,
+      "recurring": false,
+      "summary": "何があるかを把握し、穴をふさぎ続ける",
+      "weakness": "まだ世に知られていない穴には手が打てない",
+      "belongs_to": ["office", "server"],
+      "axes": { "intrusion": 25, "malware": 25 },
+      "versions": [
+        "何があるかを一覧にし、月に一度穴をふさぐ",
+        "危ないものから順に、一週間以内にふさぐ",
+        "見つけしだい自動でふさぎ、抜けを毎日調べる"
+      ],
+      "glossary": ["patch", "malware"]
+    },
+    {
+      "id": "edr",
+      "name": "端末の監視・防御",
+      "formal_name": "EDR",
+      "cost": 25,
+      "upkeep": 4,
+      "recurring": false,
+      "summary": "パソコンの中の不審な動きを見つけて止める",
+      "weakness": "人がだまされて自分で許可した操作は止めにくい",
+      "belongs_to": ["office"],
+      "axes": { "malware": 45, "intrusion": 10, "recovery": 10 },
+      "versions": [
+        "知られているウイルスを見つけて消す",
+        "あやしい動きを見つけ、その端末を切りはなす",
+        "何が起きたかを遡って調べ、回復を行う"
+      ],
+      "glossary": ["edr", "malware"]
+    },
+    {
+      "id": "waf",
+      "name": "サイトを守る対策",
+      "formal_name": "WAF",
+      "cost": 23,
+      "upkeep": 4,
+      "recurring": false,
+      "summary": "サイトへの攻撃らしい入力を止める",
+      "weakness": "社内のパソコンとデータは守らない",
+      "belongs_to": ["shop"],
+      "axes": { "intrusion": 20, "availability": 30 },
+      "versions": [
+        "よくある攻撃らしい入力を止める",
+        "そのサイトに合わせて、通す形を決めておく",
+        "新しい攻撃手法を取り込み、自動で止める"
+      ],
+      "glossary": ["waf"]
+    },
+    {
+      "id": "logging",
+      "name": "アクセス記録の監視",
+      "formal_name": "ログ監視",
+      "cost": 23,
+      "upkeep": 4,
+      "recurring": false,
+      "summary": "だれが何をしたかを記録して見張る",
+      "weakness": "気づけるだけで、止めることはできない",
+      "belongs_to": ["server"],
+      "axes": { "insider": 35, "intrusion": 10, "recovery": 10 },
+      "versions": [
+        "だれが何をしたかを記録して残す",
+        "決めた形から外れた動きを、その日のうちに知らせる",
+        "会社全体の記録を突き合わせ、つながりを見つける"
+      ],
+      "glossary": ["log", "insider"]
+    },
+    {
+      "id": "ddos",
+      "name": "大量アクセス対策",
+      "formal_name": "DDoS 対策 / CDN",
+      "cost": 22,
+      "upkeep": 4,
+      "recurring": false,
+      "summary": "大量のアクセスを受け流してお店を開けておく",
+      "weakness": "情報が漏れることには関係しない",
+      "belongs_to": ["shop"],
+      "axes": { "availability": 45 },
+      "versions": [
+        "大量のアクセスを受け流す",
+        "世界中に窓口を分け、近いところから返す",
+        "攻撃の形を見分けて、本物のお客さんだけ通す"
+      ],
+      "glossary": ["ddos", "availability"]
+    },
+    {
+      "id": "encryption",
+      "name": "端末の暗号化",
+      "formal_name": "ディスク暗号化",
+      "cost": 8,
+      "upkeep": 1,
+      "recurring": false,
+      "summary": "無くしても中身を読まれないようにする",
+      "weakness": "使っている本人が持ち出すことは止められない",
+      "belongs_to": ["office"],
+      "axes": { "insider": 15, "recovery": 15 },
+      "versions": [
+        "持ち出す端末の中身を暗号にする",
+        "すべての端末と外づけの記憶装置を暗号にする",
+        "無くした端末を、離れた場所から消せるようにする(これ暗号化の一種に入るか？)"
+      ],
+      "glossary": ["encryption"]
+    }
+  ]
+}
